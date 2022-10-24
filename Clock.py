@@ -60,7 +60,7 @@ class Clock(VMobject):
         self.clock_hand.rotate(angle - new_angle, about_point=self.clock_circle.get_center())
         return self
 
-    def set_time_for_animations(self, time: float = 0) -> Rotate:
+    def set_time_animation(self, time: float = 0) -> Rotate:
         return Rotate(self.clock_hand, self.get_time() - self.time_to_angle(time), about_point=self.clock_circle.get_center())
 
 
