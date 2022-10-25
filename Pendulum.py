@@ -12,6 +12,7 @@ class Pendulum(VMobject):
         mass_radius: float = 0.2,
         mass_color: str = WHITE,
         add_angle_label: bool = True,
+        angle_label_color: str = WHITE,
         **kwargs 
     ) -> None:
         self.rod_length = rod_length
@@ -29,17 +30,18 @@ class Pendulum(VMobject):
         self.add(self.rod, self.mass, self.dashed_vertical_line)
 
         if add_angle_label:
+            self.angle_label_color = angle_label_color
             try:
-                self.angle = Angle(self.rod, self.dashed_vertical_line, rod_length / 5, other_angle=(angle_value > 0))
+                self.angle = Angle(self.rod, self.dashed_vertical_line, rod_length / 5, other_angle=(angle_value > 0), color=angle_label_color)
                 self.angle_label = MathTex(
-                    r"\theta"
+                    r"\theta", color=angle_label_color
                 ).move_to(Angle(self.rod, self.dashed_vertical_line, radius=1.6 * self.angle.radius, other_angle=(angle_value > 0)).point_from_proportion(0.5))
                 self.rod.set_z_index(self.angle.z_index + 1)
                 self.dashed_vertical_line.set_z_index(self.angle.z_index + 1)
                 self.mass.set_z_index(self.rod.z_index + 1)
                 self.add(self.angle, self.angle_label)
             except ValueError:
-                self.angle_label = MathTex(r"\theta").move_to(self.rod.get_start() + 1.6 * rod_length / 5 * self.rod.get_unit_vector())
+                self.angle_label = MathTex(r"\theta", color=angle_label_color).move_to(self.rod.get_start() + 1.6 * rod_length / 5 * self.rod.get_unit_vector())
     
     def get_pendulum_angle(self) -> float:
         return self.pendulum_state[0]
@@ -57,7 +59,7 @@ class Pendulum(VMobject):
 
         def pendulum_eq(Y):
             theta, dtheta = Y
-            return np.array([dtheta, - air_resistance_term * dtheta - g / self.rod_length * np.sin(theta)])
+            return np.array([dtheta, -air_resistance_term * dtheta - g / self.rod_length * np.sin(theta)])
         
         def pendulum_updater(pendulum, dt):
             k_1 = pendulum_eq(pendulum.pendulum_state)
@@ -68,13 +70,17 @@ class Pendulum(VMobject):
             pendulum.pendulum_state += dY
             pendulum.rod.rotate(dY[0], about_point=pendulum.rod.get_start())
             pendulum.mass.move_to(pendulum.rod.get_end())
-            pendulum.angle.become(Angle(pendulum.rod, self.dashed_vertical_line, pendulum.rod_length / 5, other_angle=(pendulum.pendulum_state[0] > 0)))
+
+            #to prevent line from getting outside the xy plan
+            VGroup(pendulum.rod, pendulum.dashed_vertical_line).match_z(Dot(ORIGIN))
+
+            pendulum.angle.become(Angle(pendulum.rod, pendulum.dashed_vertical_line, pendulum.rod_length / 5, other_angle=(pendulum.pendulum_state[0] > 0), color=self.angle_label_color))
             try:
-                self.angle_label.move_to(
-                    Angle(pendulum.rod, pendulum.dashed_vertical_line, radius=1.6 * self.angle.radius, other_angle=(pendulum.pendulum_state[0] > 0)
+                pendulum.angle_label.move_to(
+                    Angle(pendulum.rod, pendulum.dashed_vertical_line, radius=1.6 * pendulum.angle.radius, other_angle=(pendulum.pendulum_state[0] > 0)
                 ).point_from_proportion(0.5))
             except ValueError:
-                self.angle_label.move_to(pendulum.rod.get_start() + 1.6 * pendulum.rod_length / 5 * pendulum.rod.get_unit_vector())
+                pendulum.angle_label.move_to(pendulum.rod.get_start() + 1.6 * pendulum.rod_length / 5 * pendulum.rod.get_unit_vector())
         
         self.add_updater(pendulum_updater)
         return self
