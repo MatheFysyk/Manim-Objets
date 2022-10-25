@@ -52,12 +52,12 @@ class Pendulum(VMobject):
         self.pendulum_state[1] = angular_velocity
         return self
 
-    def start_bouncing(self, init_velocity: float = 0):
+    def start_bouncing(self, init_velocity: float = 0, air_resistance_term: float = 0):
         self.set_pendulum_state(self.get_pendulum_angle(), init_velocity)
 
         def pendulum_eq(Y):
             theta, dtheta = Y
-            return np.array([dtheta, -g / self.rod_length * np.sin(theta)])
+            return np.array([dtheta, - air_resistance_term * dtheta - g / self.rod_length * np.sin(theta)])
         
         def pendulum_updater(pendulum, dt):
             k_1 = pendulum_eq(pendulum.pendulum_state)
